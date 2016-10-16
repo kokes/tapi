@@ -9,6 +9,7 @@ fix
 - embed HTML in Go code
 - proper httptrace timing
 - handle redirs
+- allow repeated keys (key: [v1, v2, v3])
 - send errors in JSON
 - syntax highlight JSON?
 - pretty print HTML

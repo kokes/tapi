@@ -13,6 +13,13 @@ import (
 	"time"
 )
 
+type IData struct {
+	Method   string            `json:"method"`
+	URL      string            `json:"url"`
+	FormData map[string]string `json:"form_data"`
+}
+
+// response data
 type RData struct {
 	StatusCode int               `json:"status_code"`
 	Protocol   string            `json:"protocol"`
@@ -56,14 +63,17 @@ func route(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleRequest(w http.ResponseWriter, r *http.Request) ([]byte, error) {
-	// qr := r.URL.Query()
+	var idta IData
+	bd, _ := ioutil.ReadAll(r.Body)
+	defer r.Body.Close()
+	err := json.Unmarshal(bd, &idta)
+	if err != nil {
+		panic(err)
+	}
 
-	method := strings.ToUpper(r.PostFormValue("method"))
-	url := r.PostFormValue("url")
-	log.Print(r.ParseForm())
-	log.Print(r.Form)
+	method := strings.ToUpper(idta.Method)
 
-	rd, err := makeRequest(method, url, nil)
+	rd, err := makeRequest(method, idta)
 	if err != nil {
 		return []byte{}, err
 	}
@@ -81,10 +91,10 @@ func handleRequest(w http.ResponseWriter, r *http.Request) ([]byte, error) {
 
 }
 
-func makeRequest(method, url string, bd io.Reader) (RData, error) {
+func makeRequest(method, bd IData) (RData, error) {
 	client := &http.Client{} // TODO: handle redirects?
 
-	req, err := http.NewRequest(method, url, nil)
+	req, err := http.NewRequest(method, bd.URL, nil)
 	if err != nil {
 		return RData{}, err
 	}

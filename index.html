@@ -1,28 +1,126 @@
 <html>
 <head>
-<meta http-equiv='Content-Type' content='text/html; charset=UTF-8' />
-<title>API tester</title>
+	<meta http-equiv='Content-Type' content='text/html; charset=UTF-8' />
+	<title>API tester</title>
+
+	<style type='text/css'>
+		body {
+			font: 0.8em Arial, sans-serif;
+			background-color: #eee;
+		}
+		div#app {
+			max-width: 960px;
+			border: 1px solid #ccc;
+			margin: 1em auto;
+			padding: 2em;
+			background-color: white;
+			box-shadow: 0 0 10px #ccc;
+		}
+		div#inputs input#url {
+			font-size: 2em;
+			padding: 0 .2em;
+			display: block;
+			width: 100%;
+		}
+
+		ul#tabsw {
+			padding: 0;
+		}
+		ul#tabsw li {
+			list-style-type: none;
+			display: block;
+			float: left;
+			padding: .5em 1em;
+			border: 1px solid #ccc;
+			margin-bottom: -1px;
+			margin-right: 4px;
+		}
+		ul#tabsw li.active {
+			border-bottom-color: white;
+		}
+		ul#tabsw li a {
+			
+		}
+
+		div#inputs div#tabs div.tab,
+		div#inputs div#tabs div.tab h3 {
+			display: none;
+		}
+		div#tabs {
+			border: 1px solid #ccc;
+			min-height: 2em;
+			clear: both;
+		}
+		div#tabs div.tab {
+			padding: 1em;
+		}
+		div#tabs div.tab textarea {
+			display: block;
+			margin-top: 1em;
+		}
+
+		
+		div#output {
+			border: 1px solid #ccc;
+			padding: 1em;
+			margin-top: 1em;
+			clear: both;
+		}
+	</style>
+
 </head>
 
 <body>
 
-<form id='inputs' method='post' action='/query'>
-	<input name='url' id='url' />
-	<select name='method' id='method'>
-		<option>GET</option>
-		<option>HEAD</option>
-		<!-- <option>POST</option> -->
-	</select>
+<div id='app'>
+	<div id='inputs'>
+		<form id='forminp'>
+			<input name='url' id='url' placeholder='Enter address' />
+			<select name='method' id='method'>
+				<option>GET</option>
+				<option>HEAD</option>
+				<option>POST</option>
+			</select>
 
-	<input type='submit' value='submit' id='submit' />
-</form>
+			<input type='submit' value='submit' id='submit' />
+		</form>
 
-<div id='output'>
-	<div id='header'>
+		<ul id='tabsw'>
+
+		</ul>
+
+		<div id='tabs'>
+			<div id='formdata' class='tab'>
+				<h3>Form data</h3>
+
+				<div class='kv'>
+					<input placeholder='key' /><input placeholder='value' />
+					<button>add kv</button>
+				</div>
+
+			</div>
+
+			<div id='reqbody' class='tab'>
+				<h3>Request body</h3>
+
+				<select>
+					<option>text/plain</option>
+					<option>application/json</option>
+				</select>
+				<textarea rows=10 cols=80></textarea>
+			</div>
+		</div>
+
 	</div>
 
-	<div id='body'>
+	<div id='output'>
+		<div id='header'>
+		</div>
+
+		<div id='body'>
+		</div>
 	</div>
+
 </div>
 
 <script type='text/javascript'>
@@ -30,19 +128,66 @@
 var d = document;
 var g;
 
-d.getElementById('inputs').addEventListener('submit', function(e) {
-	e.preventDefault();
+// prep tabs
+var tbd = d.getElementById('tabs').getElementsByClassName('tab');
+var ulsw = d.getElementById('tabsw'); // the <ul> with tab names
+for (var j=0; j < tbd.length; j++) {
+	var tb = tbd[j];
+	var li = d.createElement('li');
+	var a = d.createElement('a');
+	a.setAttribute('href', '#');
+	a.setAttribute('rel', tbd[j].getAttribute('id'));
+	a.textContent = tbd[j].getElementsByTagName('h3')[0].textContent;
+	a.addEventListener('click', function(e) {
+		e.preventDefault();
 
+		var lis = d.getElementById('tabsw').getElementsByTagName('li');
+		for (var j=0; j < lis.length; j++) {
+			lis[j].className = '';
+		}
+		// style the active tab
+		e.target.parentNode.className = 'active';
+		
+		// hide all tabs (essentially just one)
+		var tbs = d.getElementsByClassName('tab');
+		for (var j=0; j < tbs.length; j++) {
+			tbs[j].setAttribute('style', 'display: none');
+		}
+		
+		// display the one
+		var tid = e.target.getAttribute('rel');
+		d.getElementById(tid).setAttribute('style', 'display: block');
+
+		return false;
+	});
+
+	li.appendChild(a);
+	if (j == 0) a.click(); // select the first tab
+	ulsw.appendChild(li);
+}
+
+d.getElementById('forminp').addEventListener('submit', function(e) {
+	e.preventDefault();
 	wipe_outputs();
-	// var url = d.getElementById('url').value;
-	// var method = d.getElementById('method').value;
 
 	var turl = window.location.href + 'query';
-	// turl += '?method=' + method + '&url=' + encodeURIComponent(url);
+
+	var inps = d.getElementById('formdata').getElementsByTagName('input');
+	var fdata = {};
+	for (var j=0; j < inps.length/2; j++) {
+		fdata[inps[2*j].value] = inps[2*j+1].value;
+	}
+
 	var pkg = {
 		'method': d.getElementById('method').value,
-		'url': d.getElementById('url').value
+		'url': d.getElementById('url').value,
+		'body_content_type': d.getElementById('reqbody').getElementsByTagName('select')[0].value,
+		'body': d.getElementById('reqbody').getElementsByTagName('textarea')[0].value,
+		'formdata': fdata
 	}
+
+	console.log('sending data');
+	console.log(pkg);
 
 	ajax_get_json(turl, pkg, function(dt) {
 		// console.log(dt);
@@ -50,16 +195,25 @@ d.getElementById('inputs').addEventListener('submit', function(e) {
 		var hd = d.getElementById('header');
 		var bd = d.getElementById('body');
 
-		var ul = d.createElement('ul');
+		var tbl = d.createElement('table');
 		var hdk = Object.keys(dt.headers);
 		for (var j=0; j < hdk.length; j++) {
-			var li = d.createElement('li');
-			// TODO: DOM this
-			li.innerHTML = '<strong>' + hdk[j] + ':</strong> ' + dt.headers[hdk[j]];
-			ul.appendChild(li);
+			var tr = d.createElement('tr');
+			tr.appendChild(function() {
+				var th = d.createElement('th');
+				th.textContent = hdk[j];
+				return th;
+			}());
+			tr.appendChild(function() {
+				var td = d.createElement('td');
+				td.textContent = dt.headers[hdk[j]];
+				return td;
+			}());
+
+			tbl.appendChild(tr);
 		}
 
-		hd.appendChild(ul);
+		hd.appendChild(tbl);
 
 		// ---
 
@@ -77,31 +231,59 @@ d.getElementById('inputs').addEventListener('submit', function(e) {
 	return false; // form not submitted
 });
 
+d.getElementById('formdata').getElementsByClassName('kv')[0].getElementsByTagName('button')[0].addEventListener('click', addKV);
+
+function addKV(e) {
+	var pr = e.target.parentNode.parentNode; // holder of all KVs
+	e.target.parentNode.appendChild(function() {
+		var btn = d.createElement('button');
+		btn.textContent = 'remove';
+		btn.addEventListener('click', function(e) {
+			wipe_element(e.target.parentNode);
+		});
+		return btn;
+	}());
+
+	e.target.parentNode.removeChild(e.target); // remove self
+
+	pr.appendChild(function() {
+		var kvd = d.createElement('div');
+		kvd.className = 'kv';
+		var inp = d.createElement('input');
+		inp.setAttribute('placeholder', 'key');
+		kvd.appendChild(inp);
+		inp = d.createElement('input');
+		inp.setAttribute('placeholder', 'value');
+		kvd.appendChild(inp);
+
+		var btn = d.createElement('button');
+		btn.textContent = 'add kv';
+		btn.addEventListener('click', addKV)
+		kvd.appendChild(btn);
+
+		return kvd;
+	}());
+}
+
 function ajax_get_json(url, pkg, callback)
 {
-    console.log(url);
-    var rr = new XMLHttpRequest();
-    rr.onreadystatechange = function() { 
-        if (rr.readyState == 4 && rr.status == 200)
-            callback(JSON.parse(rr.responseText));
-        else if (rr.readyState == 4)
-            console.error(rr);
-    }
-    rr.open('POST', url);
-    rr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+	console.log(url);
+	var rr = new XMLHttpRequest();
+	rr.onreadystatechange = function() { 
+		if (rr.readyState == 4 && rr.status == 200)
+			callback(JSON.parse(rr.responseText));
+		else if (rr.readyState == 4)
+			console.error(rr);
+	}
+	rr.open('POST', url);
+	rr.setRequestHeader('Content-Type', 'application/json');
 
-    var spkg = [];
-    for (var j in pkg) {
-    	spkg.push(encodeURIComponent(j) + '=' + encodeURIComponent(pkg[j]));
-    }
-
-    // console.log(spkg.join('&'));
-    rr.send(spkg.join('&'));
+	rr.send(JSON.stringify(pkg));
 }
 
 function wipe_element(el) {
-    while (el.firstChild)
-        el.removeChild(el.firstChild);
+	while (el.firstChild)
+		el.removeChild(el.firstChild);
 }
 
 function wipe_outputs() {
