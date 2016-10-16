@@ -1,0 +1,119 @@
+<html>
+<head>
+<meta http-equiv='Content-Type' content='text/html; charset=UTF-8' />
+<title>API tester</title>
+</head>
+
+<body>
+
+<form id='inputs' method='post' action='/query'>
+	<input name='url' id='url' />
+	<select name='method' id='method'>
+		<option>GET</option>
+		<option>HEAD</option>
+		<!-- <option>POST</option> -->
+	</select>
+
+	<input type='submit' value='submit' id='submit' />
+</form>
+
+<div id='output'>
+	<div id='header'>
+	</div>
+
+	<div id='body'>
+	</div>
+</div>
+
+<script type='text/javascript'>
+
+var d = document;
+var g;
+
+d.getElementById('inputs').addEventListener('submit', function(e) {
+	e.preventDefault();
+
+	wipe_outputs();
+	// var url = d.getElementById('url').value;
+	// var method = d.getElementById('method').value;
+
+	var turl = window.location.href + 'query';
+	// turl += '?method=' + method + '&url=' + encodeURIComponent(url);
+	var pkg = {
+		'method': d.getElementById('method').value,
+		'url': d.getElementById('url').value
+	}
+
+	ajax_get_json(turl, pkg, function(dt) {
+		// console.log(dt);
+		g = dt;
+		var hd = d.getElementById('header');
+		var bd = d.getElementById('body');
+
+		var ul = d.createElement('ul');
+		var hdk = Object.keys(dt.headers);
+		for (var j=0; j < hdk.length; j++) {
+			var li = d.createElement('li');
+			// TODO: DOM this
+			li.innerHTML = '<strong>' + hdk[j] + ':</strong> ' + dt.headers[hdk[j]];
+			ul.appendChild(li);
+		}
+
+		hd.appendChild(ul);
+
+		// ---
+
+		var pre = d.createElement('pre');
+		var dd = atob(dt.body);
+		if (dt.headers['Content-Type'].indexOf('application/json') == 0) {
+			// pretty print JSON
+			dd = JSON.stringify(JSON.parse(dd), null, '  ');
+		}
+		pre.textContent = dd;
+
+		bd.appendChild(pre);
+	});
+
+	return false; // form not submitted
+});
+
+function ajax_get_json(url, pkg, callback)
+{
+    console.log(url);
+    var rr = new XMLHttpRequest();
+    rr.onreadystatechange = function() { 
+        if (rr.readyState == 4 && rr.status == 200)
+            callback(JSON.parse(rr.responseText));
+        else if (rr.readyState == 4)
+            console.error(rr);
+    }
+    rr.open('POST', url);
+    rr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+
+    var spkg = [];
+    for (var j in pkg) {
+    	spkg.push(encodeURIComponent(j) + '=' + encodeURIComponent(pkg[j]));
+    }
+
+    // console.log(spkg.join('&'));
+    rr.send(spkg.join('&'));
+}
+
+function wipe_element(el) {
+    while (el.firstChild)
+        el.removeChild(el.firstChild);
+}
+
+function wipe_outputs() {
+	var hd = d.getElementById('header');
+	var bd = d.getElementById('body');
+
+	wipe_element(hd);
+	wipe_element(bd);
+}
+
+</script>
+
+</body>
+
+</html>
