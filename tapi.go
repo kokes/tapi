@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -91,7 +90,7 @@ func handleRequest(w http.ResponseWriter, r *http.Request) ([]byte, error) {
 
 }
 
-func makeRequest(method, bd IData) (RData, error) {
+func makeRequest(method string, bd IData) (RData, error) {
 	client := &http.Client{} // TODO: handle redirects?
 
 	req, err := http.NewRequest(method, bd.URL, nil)
